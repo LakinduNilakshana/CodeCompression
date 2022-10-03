@@ -7,7 +7,6 @@ using namespace std;
 int dCount = 0;
 string binCode[128];
 string diction[8];
-string compressed[dCount];
 string prevLine, currentLine;
 int equalCount = 0;
 
@@ -21,6 +20,7 @@ string directMatch(int ind);
 
 int main(){
     readFromFile("original.txt");
+    string compressed[dCount];
     sortByFrequency();
     for (int i = 0; i < dCount; i++){
         currentLine = binCode[i];
