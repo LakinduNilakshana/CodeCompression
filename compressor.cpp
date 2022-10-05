@@ -17,35 +17,43 @@ string decToBinary(int n, int l);
 void sortByFrequency();
 string rleEncode(int occurance);
 string directMatch(int ind);
+void oneBitMismatch(vector<pair<string, pair<int,int>>> v, int dicIndex, string currentLine, bool flag);
 
 int main(){
     readFromFile("original.txt");
     string compressed[dCount];
     sortByFrequency();
+
     for (int i = 0; i < dCount; i++){
         currentLine = binCode[i];
-        if (prevLine == currentLine && equalCount<5){
+        bool hit = false;
+        if (prevLine == currentLine && equalCount<4){
             compressed[i] = rleEncode(equalCount);
             equalCount++;
             prevLine = currentLine;
-            cout << i+1 << " ";
-            cout << compressed[i] << endl;
-            continue;
+            continue;   //since RLE compresses the line into 5 bits, it gives the least compression ratio
         } 
         equalCount = 0;
-        bool hit = false;
+
         for (int j=0; j<8; j++){
             if (diction[j] == currentLine){
                 compressed[i] = directMatch(j);
                 hit = true;
-                break;
+                prevLine = currentLine;
+                break;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
             }
         }
-        if (!hit)
-            compressed[i] = "110" + binCode[i];
+        
+        if (hit)
+            continue;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
+        vector<pair<string, pair<int,int>>> comp;
+
+        for (int j=0; j<8; j++){
+            oneBitMismatch(comp,j,currentLine,hit);
+            twoBitMismatch(comp,j,currentLine,hit);
+        }
+        compressed[i] = "110" + binCode[i];
         prevLine = currentLine;
-        cout << i+1 << " ";
-        cout << compressed[i] << endl;
     }
     // printStrArray(compressed,dCount);
 }
@@ -104,16 +112,13 @@ void sortByFrequency(){
     for (it; it != map.end(); ++it)
         v.push_back(make_pair(it->first, it->second));
     sort(v.begin(), v.end(), myCompare);
-    cout << "Dictionary;" << endl;
+    // cout << "Dictionary;" << endl;
     for (int i=0; i<8; i++){
         diction[i] = v[i].first;
-        cout << v[i].first << " ";
-        cout << v[i].second.first << " ";
-        cout << v[i].second.second << endl;
-        
+        // cout << v[i].first << " ";
+        // cout << v[i].second.first << " ";
+        // cout << v[i].second.second << endl;
     }
-    cout << "Compressed : " << endl;
-    // printStrArray(diction,8);
 }
 
 string rleEncode(int occurance){
@@ -122,4 +127,51 @@ string rleEncode(int occurance){
 
 string directMatch(int ind){
     return "101" + decToBinary(ind,3);
+}
+
+void oneBitMismatch(vector<pair<string, pair<int,int>>> v1, int dicIndex, string currentLine, bool flag){
+    bitset<32> dataLine(currentLine);
+    bitset<32> dictLine(diction[dicIndex]);
+    dictLine ^= dataLine;
+    if (dictLine.count() == 1){
+        for (int x=0; x<32; x++){
+            if (dictLine.test(x)){
+                string out = "010" + decToBinary(31-x,5) + decToBinary (dicIndex,3);
+                v1.push_back(make_pair(out,make_pair(out.size(),2)));
+                break;
+            }
+        }
+        flag = true;
+    }
+}
+
+void twoBitMismatch(vector<pair<string, pair<int,int>>> v1, int dicIndex, string currentLine, bool flag){
+    bitset<32> dataLine(currentLine);
+    bitset<32> dictLine(diction[dicIndex]);
+    dictLine ^= dataLine;
+    if (dictLine.count() == 2){
+        int firstPos, secondPos;
+        string out;
+        for (int x=0; x<32; x++){
+            if (dictLine.test(x)){
+                firstPos = x;
+                break;
+            }
+        }
+        for (int x=firstPos; x<32; x++){
+            if (dictLine.test(x)){
+                secondPos = x;
+                break;
+            }
+        }
+        if (secondPos-firstPos == 1){
+            out = "011" + decToBinary(31-firstPos,5) + decToBinary (dicIndex,3);
+            v1.push_back(make_pair(out,make_pair(out.size(),3)));
+        }
+        else{
+            out = "100" + decToBinary(31-firstPos,5) + decToBinary(31-secondPos,5) + decToBinary (dicIndex,3);
+            v1.push_back(make_pair(out,make_pair(out.size(),4)));
+        }
+        flag = true;
+    }
 }
