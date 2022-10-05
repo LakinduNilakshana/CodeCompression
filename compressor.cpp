@@ -9,6 +9,8 @@ string binCode[128];
 string diction[8];
 string prevLine, currentLine;
 int equalCount = 0;
+bool hit;
+vector<pair<string, pair<int,int>>> comp;
 
 void readFromFile(string fileName);
 bool myCompare(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
@@ -17,7 +19,10 @@ string decToBinary(int n, int l);
 void sortByFrequency();
 string rleEncode(int occurance);
 string directMatch(int ind);
-void oneBitMismatch(vector<pair<string, pair<int,int>>> v, int dicIndex, string currentLine, bool flag);
+void oneBitMismatch(int bitIndex, int dicIndex);
+void twoBitMismatch(int bitIndex, int dicIndex);
+bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
+string findBest();
 
 int main(){
     readFromFile("original.txt");
@@ -25,8 +30,9 @@ int main(){
     sortByFrequency();
 
     for (int i = 0; i < dCount; i++){
+        comp.clear();
         currentLine = binCode[i];
-        bool hit = false;
+        hit = false;
         if (prevLine == currentLine && equalCount<4){
             compressed[i] = rleEncode(equalCount);
             equalCount++;
@@ -43,19 +49,26 @@ int main(){
                 break;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
             }
         }
-        
         if (hit)
             continue;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
-        vector<pair<string, pair<int,int>>> comp;
-
         for (int j=0; j<8; j++){
-            oneBitMismatch(comp,j,currentLine,hit);
-            twoBitMismatch(comp,j,currentLine,hit);
+            oneBitMismatch(i,j);
+            twoBitMismatch(i,j);
         }
-        compressed[i] = "110" + binCode[i];
+        
+        if (hit){
+            compressed[i] = findBest();
+        } else {
+            compressed[i] = "110" + binCode[i];
+        }
         prevLine = currentLine;
+
     }
-    // printStrArray(compressed,dCount);
+
+    for (int z1=0; z1<dCount; z1++){
+        cout << z1+1 << " ";
+        cout << compressed[z1] << endl;
+    }
 }
 
 void readFromFile(string fileName){
@@ -90,11 +103,6 @@ string decToBinary(int n, int l){
     return bin;
 }
 
-// void printStrArray(string arr[], int n){
-//     for (int i=0; i<n; i++) {
-//         cout << arr[i] << endl;
-//     }
-// }
 
 void sortByFrequency(){
     unordered_map<string, pair<int,int>> map;
@@ -129,24 +137,28 @@ string directMatch(int ind){
     return "101" + decToBinary(ind,3);
 }
 
-void oneBitMismatch(vector<pair<string, pair<int,int>>> v1, int dicIndex, string currentLine, bool flag){
-    bitset<32> dataLine(currentLine);
+void oneBitMismatch(int bitIndex, int dicIndex){
+    bitset<32> dataLine(binCode[bitIndex]);
     bitset<32> dictLine(diction[dicIndex]);
     dictLine ^= dataLine;
     if (dictLine.count() == 1){
         for (int x=0; x<32; x++){
             if (dictLine.test(x)){
                 string out = "010" + decToBinary(31-x,5) + decToBinary (dicIndex,3);
-                v1.push_back(make_pair(out,make_pair(out.size(),2)));
+                comp.push_back(make_pair(out,make_pair(11,2)));
+                // cout << "1 bit" << ":"; 
+                // cout << bitIndex+1 << " ";
+                // cout << out << " - ";
+                // cout << diction[dicIndex] << endl;
                 break;
             }
         }
-        flag = true;
+        hit = true;
     }
 }
 
-void twoBitMismatch(vector<pair<string, pair<int,int>>> v1, int dicIndex, string currentLine, bool flag){
-    bitset<32> dataLine(currentLine);
+void twoBitMismatch(int bitIndex, int dicIndex){
+    bitset<32> dataLine(binCode[bitIndex]);
     bitset<32> dictLine(diction[dicIndex]);
     dictLine ^= dataLine;
     if (dictLine.count() == 2){
@@ -158,20 +170,45 @@ void twoBitMismatch(vector<pair<string, pair<int,int>>> v1, int dicIndex, string
                 break;
             }
         }
-        for (int x=firstPos; x<32; x++){
+        for (int x=firstPos+1; x<32; x++){
             if (dictLine.test(x)){
                 secondPos = x;
                 break;
             }
         }
+
         if (secondPos-firstPos == 1){
-            out = "011" + decToBinary(31-firstPos,5) + decToBinary (dicIndex,3);
-            v1.push_back(make_pair(out,make_pair(out.size(),3)));
+            out = "011" + decToBinary(31-secondPos,5) + decToBinary (dicIndex,3);
+            comp.push_back(make_pair(out,make_pair(11,3)));
+            // cout << "2 bit consec" << ":"; 
+            // cout << bitIndex+1 << " ";
+            // cout << out << " - ";
+            // cout << diction[dicIndex] << endl;
         }
         else{
-            out = "100" + decToBinary(31-firstPos,5) + decToBinary(31-secondPos,5) + decToBinary (dicIndex,3);
-            v1.push_back(make_pair(out,make_pair(out.size(),4)));
+            out = "100" + decToBinary(31-secondPos,5) + decToBinary(31-firstPos,5) + decToBinary (dicIndex,3);
+            comp.push_back(make_pair(out,make_pair(16,4)));
+            // cout << "2 bit" << ":"; 
+            // cout << bitIndex+1 << " ";
+            // cout << out << " - ";
+            // cout << diction[dicIndex] << endl;
         }
-        flag = true;
+        hit = true;
     }
 }
+
+bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2){
+    if (p1.second.first != p2.second.first){
+        return (p1.second.first < p2.second.first);
+    } 
+    else{
+        return (p1.second.second < p2.second.second);
+    }
+}
+
+string findBest(){
+    sort(comp.begin(),comp.end(),compareBest);
+    // cout << comp[0].first << endl;
+    return comp[0].first;
+}
+
