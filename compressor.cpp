@@ -77,10 +77,9 @@ int main(){
     }
     string output;
     for (int z=0; z<compressed.size(); z++){
-        cout << compressed[z] << endl;
+        // cout << compressed[z] << endl;
         output += compressed[z];
     }
-    cout << output << endl;
     writeCompressed(output);
     // string compressedInput = readCompressed("compressed.txt");
 }
@@ -243,11 +242,20 @@ void writeCompressed(string str){
     ofstream MyFile("cout.txt");
     int lineN = str.length()/32+1;
     for (int line=0; line < lineN-1; line++){
-        cout << str.substr(32*line,32) << endl;
+        // cout << str.substr(32*line,32) << endl;
         MyFile << str.substr(32*line,32) << endl;
     }
-    // str += "1"* ((lineN-1)*32-str.length());
-
+    int bitsLeft = lineN*32-str.length();
+    for (int i =0; i<bitsLeft;i++){
+        str+="1";
+    }
+    // cout << str.substr(32*(lineN-1),32)<< endl;
+    MyFile << str.substr(32*(lineN-1),32)<< endl;
+    MyFile << "xxxx" <<endl;
+    for (int i=0; i<7; i++){
+        MyFile << diction[i] << endl;
+    }
+    MyFile << diction[7] ;
     MyFile.close();
 }
 
