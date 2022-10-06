@@ -1,3 +1,5 @@
+/* On my honor, I have neither given nor received unauthorized aid on this assignment */
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -38,56 +40,72 @@ string bitMaskDec(string str);
 void rleDecode(string str);
 void writeDecompressed(string fileName);
 
-int main(){
-    readFromFile("original.txt");
-    vector <string> compressed;
-    sortByFrequency();
+int main(int argc, char *argv[]){
+    if (argc != 2)
+    {
+        cout << "Usage: ./SIM 1(compression) or 2(decompression)" << endl;
+        exit(1);
+    }
+    string arg(argv[1]);
+    if (arg != "1" && arg != "2")
+    {
+        cout << "Usage: ./SIM 1(compression) or 2(decompression)" << endl;
+        exit(1);
+    }
+    if (arg == "1"){
+        readFromFile("original.txt");
+        vector <string> compressed;
+        sortByFrequency();
 
-    for (int i = 0; i < dCount; i++){
-        comp.clear();
-        currentLine = binCode[i];
-        hit = false;
-        if (prevLine == currentLine && equalCount<4){
-            equalCount++;
-            prevLine = currentLine;
-            continue;   //since RLE compresses the line into 5 bits, it gives the least compression ratio
-        }
-        if (equalCount!=0)
-            compressed.push_back(rleEncode(equalCount-1));
-        equalCount = 0;
-
-        for (int j=0; j<8; j++){
-            if (diction[j] == currentLine){
-                compressed.push_back(directMatch(j));
-                hit = true;
+        for (int i = 0; i < dCount; i++){
+            comp.clear();
+            currentLine = binCode[i];
+            hit = false;
+            if (prevLine == currentLine && equalCount<4){
+                equalCount++;
                 prevLine = currentLine;
-                break;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
+                continue;   //since RLE compresses the line into 5 bits, it gives the least compression ratio
             }
-        }
-        if (hit)
-            continue;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
-        for (int j=0; j<8; j++){
-            oneBitMismatch(i,j);
-            twoBitMismatch(i,j);
-            bitMask(i,j);
-        }
-        
-        if (hit){
-            compressed.push_back(findBest());
-        } else {
-            compressed.push_back("110" + binCode[i]);
-        }
-        prevLine = currentLine;
+            if (equalCount!=0)
+                compressed.push_back(rleEncode(equalCount-1));
+            equalCount = 0;
 
+            for (int j=0; j<8; j++){
+                if (diction[j] == currentLine){
+                    compressed.push_back(directMatch(j));
+                    hit = true;
+                    prevLine = currentLine;
+                    break;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
+                }
+            }
+            if (hit)
+                continue;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
+            for (int j=0; j<8; j++){
+                oneBitMismatch(i,j);
+                twoBitMismatch(i,j);
+                bitMask(i,j);
+            }
+            
+            if (hit){
+                compressed.push_back(findBest());
+            } else {
+                compressed.push_back("110" + binCode[i]);
+            }
+            prevLine = currentLine;
+
+        }
+        string output;
+        for (int z=0; z<compressed.size(); z++){
+            cout << compressed[z] << endl;
+            output += compressed[z];
+        }
+        writeCompressed(output, "cout.txt");
     }
-    string output;
-    for (int z=0; z<compressed.size(); z++){
-        output += compressed[z];
+    else{
+        string compressedInput = readCompressed("compressed.txt");
+        decodeLines(compressedInput);
+        writeDecompressed("dout.txt");
     }
-    writeCompressed(output, "cout.txt");
-    string compressedInput = readCompressed("compressed.txt");
-    decodeLines(compressedInput);
-    writeDecompressed("dout.txt");
 }
 
 void readFromFile(string fileName){
