@@ -25,7 +25,7 @@ void twoBitMismatch(int bitIndex, int dicIndex);
 void bitMask(int bitIndex, int dicIndex);
 bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
 string findBest();
-void writeCompressed(string str);
+void writeCompressed(string str, string fileName);
 string readCompressed(string fileName);
 int binary3BitToDec(string str);
 int binary5BitToDec(string str);
@@ -36,6 +36,7 @@ string twoBitAnyMismatchDec(string str);
 string twoBitConsecMismatchDec(string str);
 string bitMaskDec(string str);
 void rleDecode(string str);
+void writeDecompressed(string fileName);
 
 int main(){
     readFromFile("original.txt");
@@ -83,12 +84,10 @@ int main(){
     for (int z=0; z<compressed.size(); z++){
         output += compressed[z];
     }
-    writeCompressed(output);
+    writeCompressed(output, "cout.txt");
     string compressedInput = readCompressed("compressed.txt");
     decodeLines(compressedInput);
-    for (int z=0; z<decompressed.size(); z++){
-        cout << decompressed[z] << endl;
-    }
+    writeDecompressed("dout.txt");
 }
 
 void readFromFile(string fileName){
@@ -244,8 +243,8 @@ string findBest(){
     return comp[0].first;
 }
 
-void writeCompressed(string str){
-    ofstream MyFile("cout.txt");
+void writeCompressed(string str, string fileName){
+    ofstream MyFile(fileName);
     int lineN = str.length()/32+1;
     for (int line=0; line < lineN-1; line++){
         // cout << str.substr(32*line,32) << endl;
@@ -393,3 +392,12 @@ void rleDecode(string str){
     }
 }
 
+void writeDecompressed(string fileName){
+    ofstream MyFile(fileName);
+    for (int z=0; z<decompressed.size()-1; z++){
+        cout << decompressed[z] << endl;
+        MyFile << decompressed[z] << endl;
+    }
+    MyFile << decompressed.back();
+    MyFile.close();
+}
