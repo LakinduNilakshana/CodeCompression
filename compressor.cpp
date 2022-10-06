@@ -24,10 +24,14 @@ void twoBitMismatch(int bitIndex, int dicIndex);
 void bitMask(int bitIndex, int dicIndex);
 bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
 string findBest();
+void writeCompressed(string str);
+string readCompressed(string fileName);
+
 
 int main(){
     readFromFile("original.txt");
-    string compressed[dCount];
+    vector <string> compressed;
+    // string compressed[dCount];
     sortByFrequency();
 
     for (int i = 0; i < dCount; i++){
@@ -35,16 +39,19 @@ int main(){
         currentLine = binCode[i];
         hit = false;
         if (prevLine == currentLine && equalCount<4){
-            compressed[i] = rleEncode(equalCount);
             equalCount++;
             prevLine = currentLine;
             continue;   //since RLE compresses the line into 5 bits, it gives the least compression ratio
         } 
+        // compressed[i] = rleEncode(equalCount);
+        if (equalCount!=0)
+            compressed.push_back(rleEncode(equalCount-1));
         equalCount = 0;
 
         for (int j=0; j<8; j++){
             if (diction[j] == currentLine){
-                compressed[i] = directMatch(j);
+                // compressed[i] = directMatch(j);
+                compressed.push_back(directMatch(j));
                 hit = true;
                 prevLine = currentLine;
                 break;  //since direct match compresses the line into 6 bits, it gives the second lowest compression ratio
@@ -59,19 +66,23 @@ int main(){
         }
         
         if (hit){
-            compressed[i] = findBest();
+            // compressed[i] = findBest();
+            compressed.push_back(findBest());
         } else {
-            compressed[i] = "110" + binCode[i];
+            // compressed[i] = "110" + binCode[i];
+            compressed.push_back("110" + binCode[i]);
         }
         prevLine = currentLine;
 
     }
     string output;
-    for (int z=0; z<dCount; z++){
-        cout << z << " " << compressed[z] << endl;
+    for (int z=0; z<compressed.size(); z++){
+        cout << compressed[z] << endl;
         output += compressed[z];
     }
     cout << output << endl;
+    writeCompressed(output);
+    // string compressedInput = readCompressed("compressed.txt");
 }
 
 void readFromFile(string fileName){
@@ -126,9 +137,7 @@ void sortByFrequency(){
     // cout << "Dictionary;" << endl;
     for (int i=0; i<8; i++){
         diction[i] = v[i].first;
-        // cout << v[i].first << " ";
-        // cout << v[i].second.first << " ";
-        // cout << v[i].second.second << endl;
+        // cout << v[i].first << " " << v[i].second.first << " " << v[i].second.second << endl;
     }
 }
 
@@ -149,11 +158,7 @@ void oneBitMismatch(int bitIndex, int dicIndex){
             if (dictLine.test(x)){
                 string out = "010" + decToBinary(31-x,5) + decToBinary (dicIndex,3);
                 comp.push_back(make_pair(out,make_pair(11,2)));
-                cout << bitIndex + 1 << " : " << "1 Bit : " << out << endl;
-                // cout << "1 bit" << ":"; 
-                // cout << bitIndex+1 << " ";
-                // cout << out << " - ";
-                // cout << diction[dicIndex] << endl;
+                // cout << bitIndex + 1 << " : " << "1 Bit : " << out << endl;
                 break;
             }
         }
@@ -184,20 +189,12 @@ void twoBitMismatch(int bitIndex, int dicIndex){
         if (secondPos-firstPos == 1){
             out = "011" + decToBinary(31-secondPos,5) + decToBinary (dicIndex,3);
             comp.push_back(make_pair(out,make_pair(11,3)));
-            cout << bitIndex + 1 << " : " << "2 Bit Con : " << out << endl;
-            // cout << "2 bit consec" << ":"; 
-            // cout << bitIndex+1 << " ";
-            // cout << out << " - ";
-            // cout << diction[dicIndex] << endl;
+            // cout << bitIndex + 1 << " : " << "2 Bit Con : " << out << endl;
         }
         else{
             out = "100" + decToBinary(31-secondPos,5) + decToBinary(31-firstPos,5) + decToBinary (dicIndex,3);
             comp.push_back(make_pair(out,make_pair(16,4)));
-            cout << bitIndex + 1 << " : " << "2 Bit Any : " << out << endl;
-            // cout << "2 bit" << ":"; 
-            // cout << bitIndex+1 << " ";
-            // cout << out << " - ";
-            // cout << diction[dicIndex] << endl;
+            // cout << bitIndex + 1 << " : " << "2 Bit Any : " << out << endl;
         }
         hit = true;
     }
@@ -218,7 +215,7 @@ void bitMask(int bitIndex, int dicIndex){
                 if(mask.count()==dictLine.count()){
                     string out = "001" + decToBinary(31-x,5) + mask.to_string() + decToBinary(dicIndex,3);
                     comp.push_back(make_pair(out,make_pair(15,1)));
-                    cout << bitIndex + 1 << " : " << "BitMask : " << out << endl;
+                    // cout << bitIndex + 1 << " : " << "BitMask : " << out << endl;
                     hit = true;
                 }
                 break;
@@ -240,5 +237,41 @@ string findBest(){
     sort(comp.begin(),comp.end(),compareBest);
     // cout << comp[0].first << endl;
     return comp[0].first;
+}
+
+void writeCompressed(string str){
+    ofstream MyFile("cout.txt");
+    int lineN = str.length()/32+1;
+    for (int line=0; line < lineN-1; line++){
+        cout << str.substr(32*line,32) << endl;
+        MyFile << str.substr(32*line,32) << endl;
+    }
+    // str += "1"* ((lineN-1)*32-str.length());
+
+    MyFile.close();
+}
+
+string readCompressed(string fileName){
+    string inp;
+    string text;
+    ifstream File(fileName);
+    while(getline(File,text)){
+        inp += text;
+        // cout << text <<endl;
+    }
+    File.close();
+    return inp;
+}
+
+void decodeLines(string input){
+    int pos = 0;
+    while (pos < input.length()){
+        string indicator = input.substr(pos,3);
+        // switch (indicator){
+        //     case 000:
+        //     break;
+        // }
+        pos++;
+    }
 }
 
