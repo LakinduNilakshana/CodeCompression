@@ -11,6 +11,7 @@ string prevLine, currentLine;
 int equalCount = 0;
 bool hit;
 vector<pair<string, pair<int,int>>> comp;
+string dictionDec[8];
 
 void readFromFile(string fileName);
 bool myCompare(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
@@ -26,7 +27,7 @@ bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
 string findBest();
 void writeCompressed(string str);
 string readCompressed(string fileName);
-
+void decodeLines(string input);
 
 int main(){
     readFromFile("original.txt");
@@ -81,7 +82,8 @@ int main(){
         output += compressed[z];
     }
     writeCompressed(output);
-    // string compressedInput = readCompressed("compressed.txt");
+    string compressedInput = readCompressed("compressed.txt");
+    decodeLines(compressedInput);
 }
 
 void readFromFile(string fileName){
@@ -115,7 +117,6 @@ string decToBinary(int n, int l){
     }
     return bin;
 }
-
 
 void sortByFrequency(){
     unordered_map<string, pair<int,int>> map;
@@ -263,9 +264,16 @@ string readCompressed(string fileName){
     string inp;
     string text;
     ifstream File(fileName);
-    while(getline(File,text)){
+    while(getline(File,text)&& text!="xxxx"){
         inp += text;
         // cout << text <<endl;
+    }
+    cout << inp << endl;
+    int i=0;
+    while(getline(File,text)){
+        dictionDec[i]= text;
+        i++;
+        // cout << text << endl;
     }
     File.close();
     return inp;
@@ -274,12 +282,42 @@ string readCompressed(string fileName){
 void decodeLines(string input){
     int pos = 0;
     while (pos < input.length()){
-        string indicator = input.substr(pos,3);
-        // switch (indicator){
-        //     case 000:
-        //     break;
-        // }
-        pos++;
+        bitset<3> ind (input.substr(pos,3));
+        int indicator = (int) (ind.to_ulong());
+        switch (indicator){
+            case 0:
+                cout << "000" << input.substr(pos+3,2) << endl;
+                pos+=5;
+                break;
+            case 1:
+                cout << "001" << input.substr(pos+3,12) << endl;
+                pos+=15;
+                break;
+            case 2:
+                cout << "010" << input.substr(pos+3,8) << endl;
+                pos+=11;
+                break;
+            case 3:
+                cout << "011" << input.substr(pos+3,8) << endl;
+                pos+=11;
+                break;
+            case 4:
+                cout << "100" << input.substr(pos+3,13) << endl;
+                pos+=16;
+                break;
+            case 5:
+                cout << "101" << input.substr(pos+3,3) << endl;
+                pos+=6;
+                break;
+            case 6:
+                cout << "110" << input.substr(pos+3,32) << endl;
+                pos+=35;
+                break;
+            default:
+                cout << "111" << "Default" << endl;
+                pos+=32;
+                break;
+        }
     }
 }
 
