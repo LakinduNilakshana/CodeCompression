@@ -27,7 +27,14 @@ bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
 string findBest();
 void writeCompressed(string str);
 string readCompressed(string fileName);
+int binary3BitToDec(string str);
+int binary5BitToDec(string str);
 void decodeLines(string input);
+string directMatchDec(string str);
+string oneBitMismatchDec(string str);
+string twoBitAnyMismatchDec(string str);
+string twoBitConsecMismatchDec(string str);
+string bitMaskDec(string str);
 
 int main(){
     readFromFile("original.txt");
@@ -268,7 +275,7 @@ string readCompressed(string fileName){
         inp += text;
         // cout << text <<endl;
     }
-    cout << inp << endl;
+    // cout << inp << endl;
     int i=0;
     while(getline(File,text)){
         dictionDec[i]= text;
@@ -279,45 +286,97 @@ string readCompressed(string fileName){
     return inp;
 }
 
+int binary3BitToDec(string str){
+    bitset<3> bts(str);
+    return (int)(bts.to_ulong());
+}
+
+int binary5BitToDec(string str){
+    bitset<5> bts(str);
+    return (int)(bts.to_ulong());
+}
+
 void decodeLines(string input){
     int pos = 0;
     while (pos < input.length()){
-        bitset<3> ind (input.substr(pos,3));
-        int indicator = (int) (ind.to_ulong());
+        int indicator = binary3BitToDec(input.substr(pos,3));
         switch (indicator){
             case 0:
                 cout << "000" << input.substr(pos+3,2) << endl;
                 pos+=5;
                 break;
             case 1:
-                cout << "001" << input.substr(pos+3,12) << endl;
+                // cout << "001" << input.substr(pos+3,12) << endl;
+                cout << bitMaskDec(input.substr(pos+3,12)) << "*" << endl;
                 pos+=15;
                 break;
             case 2:
-                cout << "010" << input.substr(pos+3,8) << endl;
+                // cout << "010" << input.substr(pos+3,8) << endl;
+                cout << oneBitMismatchDec(input.substr(pos+3,8)) << endl;
                 pos+=11;
                 break;
             case 3:
-                cout << "011" << input.substr(pos+3,8) << endl;
+                // cout << "011" << input.substr(pos+3,8) << endl;
+                cout << twoBitConsecMismatchDec(input.substr(pos+3,8)) << endl;
                 pos+=11;
                 break;
             case 4:
-                cout << "100" << input.substr(pos+3,13) << endl;
+                // cout << "100" << input.substr(pos+3,13) << endl;
+                cout << twoBitAnyMismatchDec(input.substr(pos+3,13)) << endl;
                 pos+=16;
                 break;
             case 5:
-                cout << "101" << input.substr(pos+3,3) << endl;
+                // cout << "101" << input.substr(pos+3,3) << endl;
+                cout << directMatchDec(input.substr(pos+3,3)) << endl;
                 pos+=6;
                 break;
             case 6:
-                cout << "110" << input.substr(pos+3,32) << endl;
+                // cout << "110" << input.substr(pos+3,32) << endl;
+                cout << input.substr(pos+3,32) << endl;
                 pos+=35;
                 break;
             default:
-                cout << "111" << "Default" << endl;
                 pos+=32;
                 break;
         }
     }
+}
+
+string directMatchDec(string str){
+    return dictionDec[binary3BitToDec(str)];
+}
+
+string oneBitMismatchDec(string str){
+    int position = binary5BitToDec(str.substr(0,5));
+    bitset<32> data (dictionDec[binary3BitToDec(str.substr(5,3))]);
+    data.flip(31-position);
+    return data.to_string();
+}
+
+string twoBitAnyMismatchDec(string str){
+    int position1 = binary5BitToDec(str.substr(0,5));
+    int position2 = binary5BitToDec(str.substr(5,5));
+    bitset<32> data (dictionDec[binary3BitToDec(str.substr(10,3))]);
+    data.flip(31-position1);
+    data.flip(31-position2);
+    return data.to_string();
+}
+
+string twoBitConsecMismatchDec(string str){
+    int position = binary5BitToDec(str.substr(0,5));
+    bitset<32> data (dictionDec[binary3BitToDec(str.substr(5,3))]);
+    data.flip(31-position);
+    data.flip(31-position-1);
+    return data.to_string();
+}
+
+string bitMaskDec(string str){
+    int position = binary5BitToDec(str.substr(0,5));
+    bitset<4> mask (str.substr(5,4));
+    bitset<32> data (dictionDec[binary3BitToDec(str.substr(9,3))]);
+    for (int i = 0; i<4; i++){
+        data.set(31-position-i,data[31-position-i]^mask[3-i]);
+    }
+    return data.to_string();
 }
 
