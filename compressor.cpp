@@ -12,11 +12,11 @@ int equalCount = 0;
 bool hit;
 vector<pair<string, pair<int,int>>> comp;
 string dictionDec[8];
+vector <string> decompressed;
 
 void readFromFile(string fileName);
 bool myCompare(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
 string decToBinary(int n, int l);
-// void printStrArray(string arr[], int n);
 void sortByFrequency();
 string rleEncode(int occurance);
 string directMatch(int ind);
@@ -35,11 +35,11 @@ string oneBitMismatchDec(string str);
 string twoBitAnyMismatchDec(string str);
 string twoBitConsecMismatchDec(string str);
 string bitMaskDec(string str);
+void rleDecode(string str);
 
 int main(){
     readFromFile("original.txt");
     vector <string> compressed;
-    // string compressed[dCount];
     sortByFrequency();
 
     for (int i = 0; i < dCount; i++){
@@ -50,15 +50,13 @@ int main(){
             equalCount++;
             prevLine = currentLine;
             continue;   //since RLE compresses the line into 5 bits, it gives the least compression ratio
-        } 
-        // compressed[i] = rleEncode(equalCount);
+        }
         if (equalCount!=0)
             compressed.push_back(rleEncode(equalCount-1));
         equalCount = 0;
 
         for (int j=0; j<8; j++){
             if (diction[j] == currentLine){
-                // compressed[i] = directMatch(j);
                 compressed.push_back(directMatch(j));
                 hit = true;
                 prevLine = currentLine;
@@ -74,10 +72,8 @@ int main(){
         }
         
         if (hit){
-            // compressed[i] = findBest();
             compressed.push_back(findBest());
         } else {
-            // compressed[i] = "110" + binCode[i];
             compressed.push_back("110" + binCode[i]);
         }
         prevLine = currentLine;
@@ -85,12 +81,14 @@ int main(){
     }
     string output;
     for (int z=0; z<compressed.size(); z++){
-        // cout << compressed[z] << endl;
         output += compressed[z];
     }
     writeCompressed(output);
     string compressedInput = readCompressed("compressed.txt");
     decodeLines(compressedInput);
+    for (int z=0; z<decompressed.size(); z++){
+        cout << decompressed[z] << endl;
+    }
 }
 
 void readFromFile(string fileName){
@@ -302,37 +300,44 @@ void decodeLines(string input){
         int indicator = binary3BitToDec(input.substr(pos,3));
         switch (indicator){
             case 0:
-                cout << "000" << input.substr(pos+3,2) << endl;
+                // cout << "000" << input.substr(pos+3,2) << endl;
+                rleDecode(input.substr(pos+3,2));
                 pos+=5;
                 break;
             case 1:
                 // cout << "001" << input.substr(pos+3,12) << endl;
-                cout << bitMaskDec(input.substr(pos+3,12)) << "*" << endl;
+                // cout << bitMaskDec(input.substr(pos+3,12)) << "*" << endl;
+                decompressed.push_back(bitMaskDec(input.substr(pos+3,12)));
                 pos+=15;
                 break;
             case 2:
                 // cout << "010" << input.substr(pos+3,8) << endl;
-                cout << oneBitMismatchDec(input.substr(pos+3,8)) << endl;
+                // cout << oneBitMismatchDec(input.substr(pos+3,8)) << endl;
+                decompressed.push_back(oneBitMismatchDec(input.substr(pos+3,8)));
                 pos+=11;
                 break;
             case 3:
                 // cout << "011" << input.substr(pos+3,8) << endl;
-                cout << twoBitConsecMismatchDec(input.substr(pos+3,8)) << endl;
+                // cout << twoBitConsecMismatchDec(input.substr(pos+3,8)) << endl;
+                decompressed.push_back(twoBitConsecMismatchDec(input.substr(pos+3,8)));
                 pos+=11;
                 break;
             case 4:
                 // cout << "100" << input.substr(pos+3,13) << endl;
-                cout << twoBitAnyMismatchDec(input.substr(pos+3,13)) << endl;
+                // cout << twoBitAnyMismatchDec(input.substr(pos+3,13)) << endl;
+                decompressed.push_back(twoBitAnyMismatchDec(input.substr(pos+3,13)));
                 pos+=16;
                 break;
             case 5:
                 // cout << "101" << input.substr(pos+3,3) << endl;
-                cout << directMatchDec(input.substr(pos+3,3)) << endl;
+                // cout << directMatchDec(input.substr(pos+3,3)) << endl;
+                decompressed.push_back(directMatchDec(input.substr(pos+3,3)));
                 pos+=6;
                 break;
             case 6:
                 // cout << "110" << input.substr(pos+3,32) << endl;
-                cout << input.substr(pos+3,32) << endl;
+                // cout << input.substr(pos+3,32) << endl;
+                decompressed.push_back(input.substr(pos+3,32));
                 pos+=35;
                 break;
             default:
@@ -378,5 +383,13 @@ string bitMaskDec(string str){
         data.set(31-position-i,data[31-position-i]^mask[3-i]);
     }
     return data.to_string();
+}
+
+void rleDecode(string str){
+    bitset<2> rles (str);
+    int lines = (int)(rles.to_ulong());
+    for (int i=0; i<=lines; i++){
+        decompressed.push_back(decompressed.back());
+    }
 }
 
