@@ -21,6 +21,7 @@ string rleEncode(int occurance);
 string directMatch(int ind);
 void oneBitMismatch(int bitIndex, int dicIndex);
 void twoBitMismatch(int bitIndex, int dicIndex);
+void bitMask(int bitIndex, int dicIndex);
 bool compareBest(pair<string, pair<int,int>> p1,pair<string, pair<int,int>> p2);
 string findBest();
 
@@ -54,6 +55,7 @@ int main(){
         for (int j=0; j<8; j++){
             oneBitMismatch(i,j);
             twoBitMismatch(i,j);
+            bitMask(i,j);
         }
         
         if (hit){
@@ -64,11 +66,12 @@ int main(){
         prevLine = currentLine;
 
     }
-
-    for (int z1=0; z1<dCount; z1++){
-        cout << z1+1 << " ";
-        cout << compressed[z1] << endl;
+    string output;
+    for (int z=0; z<dCount; z++){
+        cout << z << " " << compressed[z] << endl;
+        output += compressed[z];
     }
+    cout << output << endl;
 }
 
 void readFromFile(string fileName){
@@ -146,6 +149,7 @@ void oneBitMismatch(int bitIndex, int dicIndex){
             if (dictLine.test(x)){
                 string out = "010" + decToBinary(31-x,5) + decToBinary (dicIndex,3);
                 comp.push_back(make_pair(out,make_pair(11,2)));
+                cout << bitIndex + 1 << " : " << "1 Bit : " << out << endl;
                 // cout << "1 bit" << ":"; 
                 // cout << bitIndex+1 << " ";
                 // cout << out << " - ";
@@ -180,6 +184,7 @@ void twoBitMismatch(int bitIndex, int dicIndex){
         if (secondPos-firstPos == 1){
             out = "011" + decToBinary(31-secondPos,5) + decToBinary (dicIndex,3);
             comp.push_back(make_pair(out,make_pair(11,3)));
+            cout << bitIndex + 1 << " : " << "2 Bit Con : " << out << endl;
             // cout << "2 bit consec" << ":"; 
             // cout << bitIndex+1 << " ";
             // cout << out << " - ";
@@ -188,12 +193,37 @@ void twoBitMismatch(int bitIndex, int dicIndex){
         else{
             out = "100" + decToBinary(31-secondPos,5) + decToBinary(31-firstPos,5) + decToBinary (dicIndex,3);
             comp.push_back(make_pair(out,make_pair(16,4)));
+            cout << bitIndex + 1 << " : " << "2 Bit Any : " << out << endl;
             // cout << "2 bit" << ":"; 
             // cout << bitIndex+1 << " ";
             // cout << out << " - ";
             // cout << diction[dicIndex] << endl;
         }
         hit = true;
+    }
+}
+
+void bitMask(int bitIndex, int dicIndex){
+    bitset<32> dataLine(binCode[bitIndex]);
+    bitset<32> dictLine(diction[dicIndex]);
+    bitset<4> mask;
+    dictLine ^= dataLine;
+    // Using bitmask technique for 1 bit mismatch is not optimum
+    if(dictLine.count()<=4 && dictLine.count()>1){
+        for (int x=31; x>2; x--){
+            if (dictLine.test(x)){
+                for (int i=0; i<4; i++){
+                    mask.set(3-i,dictLine[x-i]);
+                }
+                if(mask.count()==dictLine.count()){
+                    string out = "001" + decToBinary(31-x,5) + mask.to_string() + decToBinary(dicIndex,3);
+                    comp.push_back(make_pair(out,make_pair(15,1)));
+                    cout << bitIndex + 1 << " : " << "BitMask : " << out << endl;
+                    hit = true;
+                }
+                break;
+            }
+        }
     }
 }
 
