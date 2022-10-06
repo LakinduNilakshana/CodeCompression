@@ -395,7 +395,7 @@ void rleDecode(string str){
 void writeDecompressed(string fileName){
     ofstream MyFile(fileName);
     for (int z=0; z<decompressed.size()-1; z++){
-        cout << decompressed[z] << endl;
+        // cout << decompressed[z] << endl;
         MyFile << decompressed[z] << endl;
     }
     MyFile << decompressed.back();
